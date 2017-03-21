@@ -16,10 +16,10 @@ import array
 import os
 import random
 
+from datetime import datetime
 from messaging.utils import debug
 from messaging.mms import message, wsp_pdu
 from messaging.mms.iterator import PreviewIterator
-
 
 def flatten_list(x):
     """Flattens ``x`` into a single list"""
@@ -994,3 +994,66 @@ class MMSEncoder(wsp_pdu.Encoder):
 
         # Return an unrecognised state if it couldn't be decoded
         return [status_values.get(status_value, 'Unrecognised')]
+
+    @staticmethod
+    def encode_message_class_value(str_class):
+        """
+        Encodes the "Message-Class" value pointed by ``str_class``
+
+        From [4], section 7.2.12::
+
+            Message-class-value = Class-identifier | Token-text
+            Class-identifier = Personal | Advertisement | Informational | Auto
+            Personal = <Octet 128>
+            Advertisement = <Octet 129>
+            Informational = <Octet 130>
+            Auto = <Octet 131>
+
+        The token-text is an extension method to the message class.
+
+        :return: The decoded message class
+        :rtype: str
+        """
+        class_identifiers = {
+            'Personal': 128,
+            'Advertisement': 129,
+            'Informational': 130,
+            'Auto': 131,
+        }
+
+        if str_class in class_identifiers:
+            return [class_identifiers[str_class]]
+
+        return wsp_pdu.Encoder.encode_token_text(str_class)
+
+    @staticmethod
+    def encode_expiry_value(expiry):
+        """
+        Used to decode the "Expiry" MMS header.
+
+        From [4], section 7.2.10::
+
+            Expiry-value = Value-length (Absolute-token Date-value | Relative-token Delta-seconds-value)
+            Absolute-token = <Octet 128>
+            Relative-token = <Octet 129>
+
+        :raise wsp_pdu.DecodeError: The Expiry-value could not be decoded
+
+        :return: The decoded Expiry-value, either as a date, or as a delta-seconds value
+        :rtype: str or int
+        """
+
+        encoded_expiry_value = []
+        if type(expiry) == datetime:    # Absolute-token
+	    encoded_expiry_value.append(0x80)
+            encoded_expiry_value.extend(MMSEncoder.encode_date_value(expiry))
+	    encoded_expiry_value.insert(0, len(encoded_expiry_value))
+	    return encoded_expiry_value
+        elif type(expiry) == int:  # Relative-token
+	    encoded_expiry_value.append(0x81)
+            encoded_expiry_value.extend(MMSEncoder.encode_delta_seconds_value(expiry))
+	    encoded_expiry_value.insert(0, len(encoded_expiry_value))
+	    return encoded_expiry_value
+
+        raise wsp_pdu.EncodeError('Unrecognized token value: %s' % hex(token))
+

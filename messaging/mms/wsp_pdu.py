@@ -1528,7 +1528,7 @@ class Encoder:
         # Encode the Multi-octect-integer
         while longInt > 0:
             byte = 0xff & longInt
-            encoded_long_int.append(byte)
+            encoded_long_int.insert(0, byte)
             longInt = longInt >> 8
 
         # Now add the SHort-length value, and make sure it's ok
@@ -2079,3 +2079,44 @@ class Encoder:
 
         return encoded_charset
 
+    @staticmethod
+    def encode_date_value(date):
+        """
+        Encode the data value pointed by ``date``, which is a datetime object.
+
+        The encoding of dates shall be done in number of seconds from
+        1970-01-01, 00:00:00 GMT.
+
+        From [5], section 8.4.2.3::
+
+            Date-value = Long-integer
+
+        :raise DecodeError: This method uses `decode_long_integer()`, and thus
+                            raises this under the same conditions.
+
+        :rtype: datetime.datetime
+        """
+        return long(date.strftime("%s"))
+
+    @staticmethod
+    def encode_delta_seconds_value(seconds):
+        """
+        Decodes the delta seconds value pointed by ``byte_iter``
+
+        From [5], section 8.4.2.3::
+
+            Delta-seconds-value = Integer-value
+
+        :raise DecodeError: This method uses `decode_integer_value`, and thus
+                            raises this under the same conditions.
+        :return: the decoded delta-seconds-value
+        :rtype: int
+        """
+        return Encoder.encode_integer_value(seconds)
+
+    @staticmethod
+    def encode_uri_value(uri):
+        """
+        Stub for Uri-value encoding; see :func:`decode_text_string`
+        """
+        return Encoder.encode_text_string(uri)
