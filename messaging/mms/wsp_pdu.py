@@ -2053,3 +2053,32 @@ class Encoder:
             encoded_accept_value.extend(encoded_media_range)
 
         return encoded_accept_value
+
+    @staticmethod
+    def encode_well_known_charset(charset):
+        """
+        From [5], section 8.4.2.8::
+
+            Well-known-charset = Any-charset | Integer-value
+            Any-charset = <Octet 128>
+
+        It is encoded using values from "Character Set Assignments" table.
+
+        Equivalent to the special RFC2616 charset value "*"
+        """
+        encoded_charset = []
+        # Look for the Any-charset value
+        byte = byte_iter.preview()
+        byte_iter.reset_preview()
+        if charset == '*':
+            encoded_charset = Encoder.encode_short_integer(0) # will be stored with 8th bit set
+        else:
+    	    for intcharset in well_known_charsets:
+    		if well_known_charsets[intcharset] == charset:
+    		    encoded_charset = Encoder.encode_integer_value(intcharset)
+
+	if len(encoded_charset) == 0:
+	    raise EncodeError('Cannot encode Charset value: %s' % charset)
+
+        return encoded_charset
+
