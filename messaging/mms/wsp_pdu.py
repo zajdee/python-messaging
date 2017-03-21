@@ -2067,9 +2067,6 @@ class Encoder:
         Equivalent to the special RFC2616 charset value "*"
         """
         encoded_charset = []
-        # Look for the Any-charset value
-        byte = byte_iter.preview()
-        byte_iter.reset_preview()
         if charset == '*':
             encoded_charset = Encoder.encode_short_integer(0) # will be stored with 8th bit set
         else:
