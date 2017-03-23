@@ -2096,7 +2096,7 @@ class Encoder:
 
         :rtype: datetime.datetime
         """
-        return long(date.strftime("%s"))
+        return Encoder.encode_long_integer(int(date.strftime("%s")))
 
     @staticmethod
     def encode_delta_seconds_value(seconds):
